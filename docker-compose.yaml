@@ -1,0 +1,46 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+
+  database:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: mydatabase
+    ports:
+      - 3306:3306
+
+  backend:
+    image: openjdk:17-alpine
+    container_name: backend
+    build:
+      context: ./shapeUp  # Spring Boot 프로젝트의 Dockerfile 경로
+    ports:
+      - "8080:8080"  # Spring Boot 애플리케이션은 8080 포트에서 실행
+    depends_on:
+      - database
+    networks:
+      - my-network
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"      # HTTP 포트
+      - "443:443"    # HTTPS 포트
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf  # Nginx 설정 파일
+      - ./nginx/server.crt:/etc/nginx/server.crt  # SSL 인증서
+      - ./nginx/server.key:/etc/nginx/server.key  # SSL 키
+    depends_on:
+      - backend     # 'backend' 서비스가 준비된 후에 Nginx가 시작됨
+    networks:
+      - my-network
+
+
+networks:
+  my-network:
+    driver: bridge
